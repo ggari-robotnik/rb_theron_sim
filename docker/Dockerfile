@@ -51,8 +51,7 @@ RUN apt-get update \
 RUN apt-get update \
 	&& apt-get install -q -y \
 		python3-vcstool \
-    && apt-get install -q -y \
-		git \
+		python3-catkin-tools \
 	&& apt-get clean -q -y \
 	&& apt-get autoremove -q -y \
 	&& rm -rf /var/lib/apt/lists/*
