@@ -2,7 +2,7 @@ FROM osrf/ros:noetic-desktop-full
 LABEL Nuria Diaz <ndiaz@robotnik.es>
 
 # Non Root user
-ARG user_name=ros
+ARG user_name=robot
 ARG user_uid=1000
 ARG user_home=/home/$user_name
 ARG user_shell=/bin/bash
@@ -17,16 +17,30 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 
+
 RUN apt-get update \
 	&& apt-get install -q -y \
 		wget \
 		apt-utils \
+		git \
 		# dialog \
 		sudo \
 	&& apt-get clean -q -y \
 	&& apt-get autoremove -q -y \
 	&& rm -rf /var/lib/apt/lists/* \
-	&& echo '%ros ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+	&& echo '%robot ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Add gazebo repositories
+RUN echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list
+
+# setup keys
+RUN wget https://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
+
+# Add gazebo repositories
+RUN echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list
+
+# setup keys
+RUN wget https://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 
 RUN apt-get update \
 	&& apt upgrade -y \
@@ -43,48 +57,16 @@ RUN apt-get update \
 	&& apt-get autoremove -q -y \
 	&& rm -rf /var/lib/apt/lists/*
 
+COPY docker/ros-requirements.txt /tmp
+
 RUN apt-get update \
 	&& apt-get install -q -y \
-		ros-noetic-global-planner \
-		ros-noetic-moveit-fake-controller-manager \
-		ros-noetic-hector-gazebo-plugins \
-		ros-noetic-moveit-planners-ompl \
-		ros-noetic-teb-local-planner \
-		ros-noetic-mavros-msgs \
-		ros-noetic-ros-control \
-		ros-noetic-imu-complementary-filter \
-		#ros-noetic-pr2-moveit-config \
-		ros-noetic-moveit-ros-planning-interface \
-		ros-noetic-velocity-controllers \
-		#ros-noetic-pr2-moveit-plugins \
-		ros-noetic-moveit-ros-visualization \
-		ros-noetic-move-base \
-		ros-noetic-geometric-shapes \
-		#ros-noetic-eband-local-planner \
-		ros-noetic-map-server \
-		ros-noetic-moveit-kinematics \
-		ros-noetic-costmap-2d \
-		ros-noetic-twist-mux \
-		ros-noetic-moveit-ros-perception \
-		ros-noetic-moveit-ros-move-group \
-		ros-noetic-gmapping \
-		ros-noetic-moveit-setup-assistant \
-		ros-noetic-moveit-core \
-		ros-noetic-pr2-arm-kinematics \
-		ros-noetic-robot-localization \
-		ros-noetic-amcl \
-		ros-noetic-joy \
-		ros-noetic-geographic-msgs \
-		ros-noetic-ros-controllers \
-		ros-noetic-effort-controllers \
-		ros-noetic-topic-tools \
-		ros-noetic-tf2-web-republisher \
-		ros-noetic-rosbridge-server \
-		ros-noetic-moveit-simple-controller-manager \
-		ros-noetic-joint-state-publisher-gui \
+	--no-install-recommends \
+		$(eval "echo $(cat /tmp/ros-requirements.txt | xargs)") \
 	&& apt-get clean -q -y \
 	&& apt-get autoremove -q -y \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/* \
+	&& rm /tmp/ros-requirements.txt
 
 
 COPY docker/ros_entrypoint.sh /
